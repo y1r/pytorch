@@ -15317,10 +15317,9 @@ a")
         ''')
 
         cu.foo(torch.tensor(0))
-        with self.assertRaisesRegex(torch.jit.Error, "Exception"):
+        with self.assertRaisesRegex(torch.jit.Error, "3"):
             cu.foo(torch.tensor(1))
 
-        @torch.jit.script
         def foo(cond):
             a = 3
             if bool(cond):
@@ -15329,24 +15328,27 @@ a")
                     raise ArbitraryError
             return a
 
-        foo(torch.tensor(0))
-        # we don't currently validate the name of the exception
-        with self.assertRaisesRegex(torch.jit.Error, "Exception"):
-            foo(torch.tensor(1))
+        with self.assertRaisesRegex(RuntimeError, "undefined value ArbitraryError"):
+            torch.jit.script(foo)
 
-        @torch.jit.script
-        def foo_except_used():
+        def exception_as_value():
             a = Exception()
             print(a)
+
+        with self.assertRaisesRegex(RuntimeError, "cannot be used as a value"):
+            torch.jit.script(exception_as_value)
+
+        @torch.jit.script
+        def exception():
+            a = Exception()
             raise a
 
-        # a not DCEd
-        with self.assertRaisesRegex(RuntimeError, "expected value of type Tensor"):
-            foo_except_used()
+        with self.assertRaisesRegex(torch.jit.Error, ""):
+            exception()
 
         @torch.jit.script
         def foo_no_decl_always_throws():
-            raise "Hi"
+            raise RuntimeError("Hi")
 
         # function that has no declared type but always throws set to None
         output_type = next(foo_no_decl_always_throws.graph.outputs()).type()
@@ -15360,10 +15362,11 @@ a")
         output_type = next(foo_decl_always_throws.graph.outputs()).type()
         self.assertTrue(str(output_type) == "Tensor")
 
-        # We don't validate the expr following raise
-        @torch.jit.script
         def foo():
             raise 3 + 4
+
+        with self.assertRaisesRegex(RuntimeError, "must derive from BaseException"):
+            torch.jit.script(foo)
 
         # a escapes scope
         @torch.jit.script
@@ -15386,7 +15389,7 @@ a")
         ''')
 
         cu.foo(torch.tensor(1))
-        with self.assertRaisesRegex(torch.jit.Error, "Exception"):
+        with self.assertRaisesRegex(torch.jit.Error, "hi"):
             cu.foo(torch.tensor(0))
 
         @torch.jit.script
@@ -15395,7 +15398,7 @@ a")
 
         foo(torch.tensor(1))
         # we don't currently validate the name of the exception
-        with self.assertRaisesRegex(torch.jit.Error, "Exception"):
+        with self.assertRaisesRegex(torch.jit.Error, "hi"):
             foo(torch.tensor(0))
 
     def test_python_op_exception(self):
@@ -16192,7 +16195,7 @@ a")
         def no_ifs_added(x):
             # type: (int) -> int
             if x < 0:
-                raise RunTimeError("hi")
+                raise RuntimeError("hi")
             return x
 
         self.checkScript(no_ifs_added, (1,))
@@ -16207,7 +16210,7 @@ a")
                 else:
                     a = 2
             else:
-                raise RunTimeError("hi")
+                raise RuntimeError("hi")
             return a + 2
 
         self.checkScript(test_if_might, (1,))
@@ -16219,7 +16222,7 @@ a")
             # type: (int)
             if x >= 0:
                 for i in range(x):
-                    raise RunTimeError("hi")
+                    raise RuntimeError("hi")
             else:
                 return 5
             return x + 3
@@ -16236,7 +16239,7 @@ a")
             i = 0
             for i in range(5):
                 if i == x:
-                    raise RunTimeError("hi")
+                    raise RuntimeError("hi")
                 else:
                     continue
                 print(i)
@@ -16253,7 +16256,7 @@ a")
                 # type: (Tensor) -> Tensor
                 output = torch.tanh(self)
                 def backward(grad_output):
-                    raise "Hi"
+                    raise RuntimeError("Hi")
         ''')
         with self.assertRaisesRegex(RuntimeError, "does not return along all"):
             cu = torch.jit.CompilationUnit(code)
@@ -16264,7 +16267,7 @@ a")
                 if x > 0:
                     a = 0
                     def backward(grad_output):
-                        raise "Hi"
+                        raise RuntimeError("Hi")
                     a = a + 1
                 else:
                     return x
