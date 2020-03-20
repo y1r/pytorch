@@ -829,17 +829,18 @@ std::shared_ptr<FutureVariableList> Engine::execute_with_graph_task(
 }
 
 void Engine::mark_graph_task_completed(std::shared_ptr<GraphTask>& graph_task) {
-  std::unique_lock<std::mutex> lock(graph_task->mutex_);
-  if (graph_task->future_result_->completed()) {
-    // Future is already marked as completed.
-    return;
-  }
-
   try {
     // Run post processing, before marking the future as complete.
+    // Drop lock prior to completing, to avoid holding across callbacks.
+    std::unique_lock<std::mutex> lock(graph_task->mutex_);
+    if (graph_task->future_completed_.exchange(true)) {
+      // Future is already marked as completed.
+      return;
+    }
     graph_task_exec_post_processing(graph_task);
-    graph_task->future_result_->markCompleted(
-        std::move(graph_task->captured_vars_));
+    std::vector<Variable> vars = std::move(graph_task->captured_vars_);
+    lock.unlock();
+    graph_task->future_result_->markCompleted(std::move(vars));
   } catch (std::exception& e) {
     graph_task->future_result_->setError(e.what());
   }
