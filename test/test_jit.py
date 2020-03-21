@@ -15371,6 +15371,13 @@ a")
             return a
         self.assertEqual(foo(), 1)
 
+        @torch.jit.script
+        def tuple_fn():
+            raise RuntimeError("hello", "goodbye")
+
+        with self.assertRaisesRegex(torch.jit.Error, "hello, goodbye"):
+            tuple_fn()
+
     def test_assertions(self):
         cu = torch.jit.CompilationUnit('''
             def foo(cond):

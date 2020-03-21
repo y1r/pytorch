@@ -1732,19 +1732,18 @@ struct to_ir {
   // We ignore the expression following raise
   void emitRaise(const Raise& raise) {
     auto sv = emitSugaredExpr(raise.expr(), 1);
-    Value* value = nullptr;
+    Value* error_message = nullptr;
 
-    auto exception_instance = std::dynamic_pointer_cast<ExceptionMessageValue>(sv);
     if (auto exception_instance =
             std::dynamic_pointer_cast<ExceptionMessageValue>(sv)) {
       // The typical case, an instance of the exception class was thrown:
-    //    raise RuntimeError("error")
-      value = exception_instance->getValue();
+      //    raise RuntimeError("error")
+      error_message = exception_instance->getValue();
     } else if (
         auto exception_class = std::dynamic_pointer_cast<ExceptionValue>(sv)) {
       // A bare exception was thrown so add an empty message. e.g.
       //    raise RuntimeError
-      value = insertConstant(*graph, "", raise.range());
+      error_message = insertConstant(*graph, "", raise.range());
     } else {
       // The raise was not followed by an exception (i.e. it was something like
       // `raise "error"` instead of `raise RuntimeError("error")`)
@@ -1752,14 +1751,11 @@ struct to_ir {
           << "exceptions must derive from BaseException";
     }
 
-    // TODO: Fix hack (some things like `ValueError` can take non-string
-    // arguments) Since exceptions are still sugared values and don't have an
-    // `attr()` defined, this should be ok for now
-    if (!value->type()->isSubtypeOf(StringType::get())) {
-      value = graph->insert(aten::str, {value});
+    if (!error_message->type()->isSubtypeOf(StringType::get())) {
+      error_message = graph->insert(aten::str, {error_message});
     }
 
-    graph->insert(prim::RaiseException, {value}, {}, raise.range());
+    graph->insert(prim::RaiseException, {error_message}, {}, raise.range());
     exit_blocks.insert(environment_stack->block());
   }
 

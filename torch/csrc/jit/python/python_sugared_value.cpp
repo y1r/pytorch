@@ -554,16 +554,21 @@ std::shared_ptr<SugaredValue> PythonExceptionValue::call(
     at::ArrayRef<NamedValue> inputs,
     at::ArrayRef<NamedValue> attributes,
     size_t n_binders) {
-  Value* message;
+  Value* error_message;
   if (inputs.size() == 0) {
-    message = insertConstant(*caller.graph(), "", loc);
+    error_message = insertConstant(*caller.graph(), "", loc);
   } else if (inputs.size() == 1) {
-    message = inputs.at(0).value(*caller.graph());
+    error_message = inputs.at(0).value(*caller.graph());
   } else {
-    throw ErrorReport(loc) << "exceptions in TorchScript only support"
-                              " construction with at most 1 message argument\n";
+    auto values = fmap(inputs, [&](const NamedValue& nv) {
+      return nv.value(*caller.graph());
+    });
+    error_message = caller.graph()
+                        ->insertNode(caller.graph()->createTuple(values))
+                        ->output();
   }
-  return std::make_shared<ExceptionMessageValue>(message);
+
+  return std::make_shared<ExceptionMessageValue>(error_message);
 }
 
 std::shared_ptr<SugaredValue> toSugaredValue(
@@ -654,6 +659,11 @@ std::shared_ptr<SugaredValue> toSugaredValue(
         Symbol::fromQualString(py::str(builtin_name)), c10::nullopt);
   }
 
+  if (py::cast<bool>(
+          py::module::import("torch.jit").attr("_is_exception")(obj))) {
+    return std::make_shared<PythonExceptionValue>(obj);
+  }
+
   if (py::isinstance<py::function>(obj)) {
     if (py::cast<bool>(
             py::module::import("torch.jit").attr("_is_python_builtin")(obj))) {
@@ -666,11 +676,6 @@ std::shared_ptr<SugaredValue> toSugaredValue(
       throw ErrorReport(loc) << "Python builtin " << py::str(obj)
                              << " is currently not supported in Torchscript";
     }
-  }
-
-  if (py::cast<bool>(
-          py::module::import("torch.jit").attr("_is_exception")(obj))) {
-    return std::make_shared<PythonExceptionValue>(obj);
   }
 
   py::object dispatched_fn =
