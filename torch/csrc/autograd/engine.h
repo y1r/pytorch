@@ -115,6 +115,10 @@ struct GraphTask {
   // tasks are done.
   std::shared_ptr<FutureVariableList> future_result_;
 
+  std::vector<std::function<void()>> final_callbacks_;
+  // To protect reads and writes to final_callbacks_
+  std::mutex final_callbacks_lock_;
+
   GraphTask(
       bool keep_graph,
       bool grad_mode,
@@ -239,9 +243,6 @@ struct TORCH_API Engine {
   std::once_flag start_threads_flag_;
   // Safe to read ready_queues_ without synchronization after intialization
   std::vector<std::shared_ptr<ReadyQueue>> ready_queues_;
-  std::vector<std::function<void()>> final_callbacks_;
-  // To protect reads and writes to final_callbacks_
-  std::mutex post_callbacks_lock_;
   // How many nested reentrant calls are allowed until a new thread is used
   int max_recursion_depth_;
 
