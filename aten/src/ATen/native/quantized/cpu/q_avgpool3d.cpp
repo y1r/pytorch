@@ -222,8 +222,7 @@ Tensor q_avg_pool3d(
         output_shape,
         input.options().memory_format(input.suggest_memory_format()),
         input.q_scale(),
-        input.q_zero_point(),
-        c10::nullopt);
+        input.q_zero_point());
     // fast path for channel last: qavg_pool_2d_nhwc_stub
     if (output_shape.size() == 4) {
       qavg_pool3d_nhwc_stub(
