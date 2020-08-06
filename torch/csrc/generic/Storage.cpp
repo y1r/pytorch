@@ -356,6 +356,7 @@ void THPStorage_(initCopyMethods)()
 #ifdef THC_GENERIC_FILE
   // copy from GPU types
   #if !defined(THC_REAL_IS_COMPLEXFLOAT) && !defined(THC_REAL_IS_COMPLEXDOUBLE) && !defined(TH_REAL_IS_COMPLEXFLOAT) && !defined(TH_REAL_IS_COMPLEXDOUBLE)
+    // blocking copy
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPByteStorageType, h, &THWStorage_(copyCudaByte));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPCharStorageType, h, &THWStorage_(copyCudaChar));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPShortStorageType, h, &THWStorage_(copyCudaShort));
@@ -366,9 +367,26 @@ void THPStorage_(initCopyMethods)()
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPHalfStorageType, h, &THWStorage_(copyCudaHalf));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBoolStorageType, h, &THWStorage_(copyCudaBool));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBFloat16StorageType, h, &THWStorage_(copyCudaBFloat16));
+
+    // non blocking copy
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPByteStorageType, h, &THWStorage_(copyAsyncCudaByte), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPCharStorageType, h, &THWStorage_(copyAsyncCudaChar), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPShortStorageType, h, &THWStorage_(copyAsyncCudaShort), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPIntStorageType, h, &THWStorage_(copyAsyncCudaInt), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPLongStorageType, h, &THWStorage_(copyAsyncCudaLong), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPFloatStorageType, h, &THWStorage_(copyAsyncCudaFloat), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPDoubleStorageType, h, &THWStorage_(copyAsyncCudaDouble), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPHalfStorageType, h, &THWStorage_(copyAsyncCudaHalf), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBoolStorageType, h, &THWStorage_(copyAsyncCudaBool), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBFloat16StorageType, h, &THWStorage_(copyAsyncCudaBFloat16), true);
   #else
+    // blocking copy
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexFloatStorageType, h, &THWStorage_(copyCudaComplexFloat));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexDoubleStorageType, h, &THWStorage_(copyCudaComplexDouble));
+
+    // non blocking copy
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexFloatStorageType, h, &THWStorage_(copyAsyncCudaComplexFloat), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexDoubleStorageType, h, &THWStorage_(copyAsyncCudaComplexDouble), true);
   #endif
   // add CPU <- GPU copies to base type
   /// #define THPCpuStorage TH_CONCAT_3(THP, Real, Storage)
@@ -376,6 +394,7 @@ void THPStorage_(initCopyMethods)()
   extern THPCopyList THCpuStorage_(copy_functions);
   auto& b = THCpuStorage_(copy_functions);
   #if !defined(THC_REAL_IS_COMPLEXFLOAT) && !defined(THC_REAL_IS_COMPLEXDOUBLE) && !defined(TH_REAL_IS_COMPLEXFLOAT) && !defined(TH_REAL_IS_COMPLEXDOUBLE)
+    // blocking copy
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPByteStorageType, b, &THCpuStorage_(copyCudaByte));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPCharStorageType, b, &THCpuStorage_(copyCudaChar));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPShortStorageType, b, &THCpuStorage_(copyCudaShort));
@@ -386,9 +405,26 @@ void THPStorage_(initCopyMethods)()
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPHalfStorageType, b, &THCpuStorage_(copyCudaHalf));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBoolStorageType, b, &THCpuStorage_(copyCudaBool));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBFloat16StorageType, b, &THCpuStorage_(copyCudaBFloat16));
+
+    // non blocking copy
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPByteStorageType, b, &THCpuStorage_(copyAsyncCudaByte), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPCharStorageType, b, &THCpuStorage_(copyAsyncCudaChar), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPShortStorageType, b, &THCpuStorage_(copyAsyncCudaShort), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPIntStorageType, b, &THCpuStorage_(copyAsyncCudaInt), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPLongStorageType, b, &THCpuStorage_(copyAsyncCudaLong), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPFloatStorageType, b, &THCpuStorage_(copyAsyncCudaFloat), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPDoubleStorageType, b, &THCpuStorage_(copyAsyncCudaDouble), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPHalfStorageType, b, &THCpuStorage_(copyAsyncCudaHalf), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBoolStorageType, b, &THCpuStorage_(copyAsyncCudaBool), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPBFloat16StorageType, b, &THCpuStorage_(copyAsyncCudaBFloat16), true);
   #else
+    // blocking copy
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexFloatStorageType, b, &THCpuStorage_(copyCudaComplexFloat));
     THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexDoubleStorageType, b, &THCpuStorage_(copyCudaComplexDouble));
+
+    // non blocking copy
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexFloatStorageType, b, &THCpuStorage_(copyAsyncCudaComplexFloat), true);
+    THPInsertStorageCopyFunction<THPStorage, THPStorage>(&THCPComplexDoubleStorageType, b, &THCpuStorage_(copyAsyncCudaComplexDouble), true);
   #endif
   #undef THCpuStorage
   #undef THCpuStorage_

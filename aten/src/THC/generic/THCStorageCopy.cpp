@@ -38,7 +38,17 @@ void THCStorage_(copyCPU)(THCState *state, THCStorage *self, struct THStorage *s
     THCTensor_(copy)(state, selfTensor, srcTensor);                           \
     TH##TYPEC##Tensor_free(srcTensor);                                        \
     THCTensor_(free)(state, selfTensor);                                      \
-  }
+  }                                                                           \
+  void THCStorage_(copyAsync##TYPEC)(                                         \
+      THCState * state, THCStorage * self, struct TH##TYPEC##Storage * src) { \
+    THCTensor* selfTensor = THCTensor_(newWithStorage1d)(                     \
+        state, self, 0, src->nbytes() / sizeof(scalar_t), 1);                 \
+    struct TH##TYPEC##Tensor* srcTensor = TH##TYPEC##Tensor_newWithStorage1d( \
+        src, 0, src->nbytes() / sizeof(scalar_t), 1);                         \
+    THCTensor_(copyAsync)(state, selfTensor, srcTensor);                      \
+    TH##TYPEC##Tensor_free(srcTensor);                                        \
+    THCTensor_(free)(state, selfTensor);                                      \
+  }                                                                           \
 
 // TODO: Add cross-dtype storage copy for complex storage
 #if !defined(THC_REAL_IS_COMPLEXFLOAT) && !defined(THC_REAL_IS_COMPLEXDOUBLE)
@@ -89,7 +99,17 @@ void THStorage_(copyCuda)(THCState *state, THStorage *self, struct THCStorage *s
     THCTensor_(copy)(state, selfTensor, srcTensor);                           \
     THCTensor_(free)(state, srcTensor);                                       \
     TH##TYPEC##Tensor_free(selfTensor);                                       \
-  }
+  }                                                                           \
+  void TH_CONCAT_4(TH, TYPEC, Storage_copyAsyncCuda, Real)(                   \
+      THCState * state, TH##TYPEC##Storage * self, struct THCStorage * src) { \
+    TH##TYPEC##Tensor* selfTensor = TH##TYPEC##Tensor_newWithStorage1d(       \
+        self, 0, self->nbytes() / sizeof(scalar_t), 1);                       \
+    struct THCTensor* srcTensor = THCTensor_(newWithStorage1d)(               \
+        state, src, 0, src->nbytes() / sizeof(scalar_t), 1);                  \
+    THCTensor_(copyAsync)(state, selfTensor, srcTensor);                      \
+    THCTensor_(free)(state, srcTensor);                                       \
+    TH##TYPEC##Tensor_free(selfTensor);                                       \
+  }                                                                           \
 
 // TODO: Add cross-dtype storage copy for complex storage
 #if !defined(THC_REAL_IS_COMPLEXFLOAT) && !defined(THC_REAL_IS_COMPLEXDOUBLE)

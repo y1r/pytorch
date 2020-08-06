@@ -9,6 +9,13 @@ void THCTensor_(copy)(THCState* state, THCTensor* dst, THCTensor* src) {
   at::native::copy_(dst_wrap, src_wrap);
 }
 
+void THCTensor_(copyAsync)(THCState* state, THCTensor* dst, THCTensor* src) {
+  if (dst == src) return;
+  at::Tensor dst_wrap = THTensor_wrap(dst);
+  at::Tensor src_wrap = THTensor_wrap(src);
+  at::native::copy_(dst_wrap, src_wrap, true);
+}
+
 template <>
 THCTensor *THCTensor_newClone<scalar_t>(THCState *state, THCTensor *self) {
   THCTensor* tensor =
