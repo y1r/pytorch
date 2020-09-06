@@ -877,7 +877,7 @@ def parse_cpu_trace(thread_records):
                 filtered_handles.add(record_key)
                 continue
 
-            if record.kind() == 'push':
+            if record.kind() == 'push' or record.name() == '__start_profile':
                 # workaround to reduce double logging from operator
                 # wrappers and redispatch
                 if prev_record is not None:
@@ -893,7 +893,7 @@ def parse_cpu_trace(thread_records):
                 range_starts[record_key] = record
                 cpu_memory_allocs[record_key] = 0
                 cuda_memory_allocs[record_key] = 0
-            elif record.kind() == 'pop':
+            elif record.kind() == 'pop' or record.name() == '__stop_profile':
                 assert (
                     record_key in range_starts
                 ), """Expected record (name={}) with key {} to exist in range_starts.
