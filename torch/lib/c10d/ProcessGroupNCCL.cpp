@@ -1268,15 +1268,9 @@ c10::intrusive_ptr<ProcessGroup::Work> ProcessGroupNCCL::allgather(
     std::vector<std::vector<at::Tensor>>& outputTensors,
     std::vector<at::Tensor>& inputTensors,
     const AllgatherOptions& opts) {
-  check_gpu_tensors(inputTensors);
-
-  auto outputFlattened =
-      flatten_for_scatter_gather(outputTensors, inputTensors, size_);
-  check_gpu_tensors(outputFlattened);
-
   return collective(
       inputTensors,
-      outputFlattened,
+      outputTensors[0],
       [&](at::Tensor& input,
           at::Tensor& output,
           ncclComm_t comm,
@@ -1300,8 +1294,6 @@ c10::intrusive_ptr<ProcessGroup::Work> ProcessGroupNCCL::allgather(
             // See [Sync Streams].
             c10::cuda::CUDACachingAllocator::recordStream(
                 outputTensors[i][j].storage().data_ptr(), ncclStreams[i]);
-
-            outputTensors[i][j].copy_(outputFlattened[i][j], true);
           }
         }
       },
@@ -1321,14 +1313,9 @@ c10::intrusive_ptr<ProcessGroup::Work> ProcessGroupNCCL::reduce_scatter(
     std::vector<at::Tensor>& outputTensors,
     std::vector<std::vector<at::Tensor>>& inputTensors,
     const ReduceScatterOptions& opts) {
-  check_gpu_tensors(outputTensors);
-
-  auto inputFlattened =
-      flatten_for_scatter_gather(inputTensors, outputTensors, size_);
-  check_gpu_tensors(inputFlattened);
-
+  std::vector<at::Tensor> flattened = {inputTensors[0][0]};
   return collective(
-      inputFlattened,
+      flattened,
       outputTensors,
       [&](at::Tensor& input,
           at::Tensor& output,
@@ -1353,8 +1340,6 @@ c10::intrusive_ptr<ProcessGroup::Work> ProcessGroupNCCL::reduce_scatter(
             // See [Sync Streams].
             c10::cuda::CUDACachingAllocator::recordStream(
                 inputTensors[i][j].storage().data_ptr(), ncclStreams[i]);
-
-            inputFlattened[i][j].copy_(inputTensors[i][j], true);
           }
         }
       },
